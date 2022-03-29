@@ -196,7 +196,7 @@ class BFClassifier(ClassifierMixin, BF):
                 Controls the number of boosting iterations.
         active_function: {str, ('relu', 'tanh', 'sigmoid' or 'linear')}, default='relu'
                         Controls the active function of enhancement nodes.
-        n_nodes_H: int, default=10
+        n_nodes_H: int, default=100
                     Controls the number of enhancement nodes.
         reg_alpha: float, default=0.001
                     Regularization strength; must be a positive float. Regularization improves the conditioning of the problem and reduces the variance of the estimates. Larger values specify stronger regularization.
@@ -215,7 +215,8 @@ class BFClassifier(ClassifierMixin, BF):
         random_state: int, default=0
                         Controls the randomness of the estimator.
     """
-    def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=10, reg_alpha=0.001, verbose=False, boosting_model='ridge',
+
+    def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=100, reg_alpha=0.001, verbose=False, boosting_model='ridge',
                  batch_size=256, learning_rate=0.05, noise_scale=1.0, initLearner=None, random_state=0):
         BF.__init__(self, active_function, n_nodes_H)
         self.reg_alpha = reg_alpha
@@ -346,7 +347,7 @@ class BFClassifier(ClassifierMixin, BF):
         """
         return self.labelEncoder_.labelEncoder.classes_
 
-    def fit(self, X=None, y=None, X_unlabeled=None, X_source=None, y_source=None, eval_data=None):
+    def fit(self, X=None, y=None, eval_data=None):
         """
             Build a TrBF model.
 
@@ -357,15 +358,6 @@ class BFClassifier(ClassifierMixin, BF):
 
             y : ndarray of shape (n_samples,)
                 Target values.
-
-            X_unlabeled : {ndarray, sparse matrix} of shape (n_samples, n_features) or dict
-                Unlabeled training data.
-
-            X_source : {ndarray, sparse matrix} of shape (n_samples, n_features) or dict
-                Training data from the source domain.
-
-            y_source : ndarray of shape (n_samples,)
-                Target values from the source domain.
 
             eval_data : tuple (X_test, y_test)
                 tuple to use for watching the boosting process.
@@ -386,41 +378,14 @@ class BFClassifier(ClassifierMixin, BF):
                 "%s doesn't support multi-label classification" % (
                     self.__class__.__name__))
         X, Y = check_X_y(X, Y, dtype=[np.float64, np.float32], multi_output=True, y_numeric=True)
-        if X_source is not None and y_source is not None:
-            X_source, y_source = check_X_y(X_source, y_source, dtype=[np.float64, np.float32], multi_output=True, y_numeric=True)
-            X = np.r_[X_source, X]
-            Y = np.r_[self.labelEncoder_.transform(y_source), Y]
-            num_source = len(X_source)
-        else:
-            num_source = 0
-        if X_unlabeled is not None:
-            X_unlabeled = check_array(X_unlabeled)
-            X_total = np.r_[X, X_unlabeled]
-        else:
-            X_total = X
-        feature_std = np.std(X_total, axis=0)
         self.n_classes_ = len(self.classes_)
-        num_labeled = len(Y)
         model = Ridge(alpha=self.reg_alpha)
-        output_total = self._get_init_output(X_total)
-        prob = self._output2prob(output_total[:num_labeled])
+        output_total = self._get_init_output(X)
+        prob = self._output2prob(output_total)
         if self.verbose:
             if Y is not None:
                 print('Init Loss: {}, ACC: {}'.format(log_loss(Y, prob), accuracy_score(Y.argmax(axis=1), prob.argmax(axis=1))))
-        H_total = self._generate_h(X_total)
-        H = H_total[:num_labeled]
-        if X_unlabeled is not None:
-            output_unlabeled = np.copy(output_total[num_labeled:])
-            unlabeled_y = output_unlabeled.argmax(axis=1)
-            unlabeled_y = self.labelEncoder_.transform(unlabeled_y.reshape((-1, 1)))
-            noise = np.random.normal(0.0, self.noise_scale * feature_std, size=X_unlabeled.shape)
-            unlabeled_H_augment = self._transform_iter(X_unlabeled + noise, 0)
-            unlabeled_prob_augment = self._output2prob(self._get_init_output(X_unlabeled + noise))
-        else:
-            output_unlabeled = None
-            unlabeled_y = None
-            unlabeled_prob_augment = None
-            unlabeled_H_augment = None
+        H = self._generate_h(X)
         if eval_data is not None:
             eval_X, eval_y = eval_data
             eval_output = self._get_init_output(eval_X)
@@ -428,48 +393,21 @@ class BFClassifier(ClassifierMixin, BF):
                 print('Init Test ACC: {}'.format(accuracy_score(eval_y, eval_output.argmax(axis=1))))
         else:
             eval_X, eval_y, eval_output = None, None, None
-        source_true_index = None
         self.estimators_ = []
         for i in range(self.max_iterations):
             new_estimators_ = []
-            if i % 2 == 0 or X_unlabeled is None:
-                if num_source > 0:
-                    source_true_index = Y[:num_source].argmax(axis=1) == prob[:num_source].argmax(axis=1)
-                for j in range(self.n_classes_):
-                    model_copy = deepcopy(model)
-                    w, z = self._weight_and_response(Y[:, j], prob[:, j])
-                    batch_index = self._get_balance_index(Y[num_source:, j], weight=w[num_source:], bs=int(self.batch_size / 2.0))
-                    X_batch, z_batch = H[num_source:][batch_index], z[num_source:][batch_index]
-                    if num_source > 0:
-                        w[:num_source][~source_true_index] = 0.0
-                        batch_index = self._get_balance_index(Y[:num_source, j], weight=w[:num_source], bs=int(self.batch_size / 2.0))
-                        X_batch_source, z_batch_source = H[:num_source][batch_index], z[:num_source][batch_index]
-                        X_batch, z_batch = np.r_[X_batch_source, X_batch], np.r_[z_batch_source, z_batch]
-
-                    model_copy.fit(X_batch, z_batch)
-                    new_estimators_.append(model_copy)
-            else:
-                for j in range(self.n_classes_):
-                    model_copy = deepcopy(model)
-                    w, z = self._weight_and_response(Y[num_source:, j], prob[num_source:, j])
-                    batch_index = self._get_balance_index(Y[num_source:, j], weight=w, bs=int(self.batch_size / 2.0))
-                    X_batch, z_batch = H[num_source:][batch_index], z[batch_index]
-                    unlabeled_w, unlabeled_z = self._weight_and_response(unlabeled_y[:, j], unlabeled_prob_augment[:, j])
-                    unlabeled_batch_index = random.choice(len(unlabeled_w), self.batch_size, replace=False,
-                                                          p=unlabeled_w / unlabeled_w.sum())
-                    unlabeled_X_batch1 = unlabeled_H_augment[unlabeled_batch_index]
-                    unlabeled_z_batch1 = unlabeled_z[unlabeled_batch_index]
-                    X_batch = np.r_[X_batch, unlabeled_X_batch1]
-                    z_batch = np.r_[z_batch, unlabeled_z_batch1]
-
-                    model_copy.fit(X_batch, z_batch)
-                    new_estimators_.append(model_copy)
+            for j in range(self.n_classes_):
+                model_copy = deepcopy(model)
+                w, z = self._weight_and_response(Y[:, j], prob[:, j])
+                batch_index = self._get_balance_index(Y[:, j], weight=w, bs=int(self.batch_size / 2.0))
+                X_batch, z_batch = H[batch_index], z[batch_index]
+                model_copy.fit(X_batch, z_batch)
+                new_estimators_.append(model_copy)
 
             self.estimators_.append(new_estimators_)
-            new_scores = self._predict_score(new_estimators_, H_total)
+            new_scores = self._predict_score(new_estimators_, H)
             output_total += new_scores
-            prob_total = self._output2prob(output_total)
-            prob = prob_total[: num_labeled]
+            prob = self._output2prob(output_total)
             if self.verbose:
                 print('Iteration: {} Loss: {}, ACC: {}'.format(i + 1, log_loss(Y, prob),
                                                                accuracy_score(Y.argmax(axis=1), prob.argmax(axis=1))))
@@ -479,15 +417,7 @@ class BFClassifier(ClassifierMixin, BF):
                 if self.verbose:
                     print('Iteration: {} Test ACC: {}'.format(i + 1, accuracy_score(eval_y, eval_output.argmax(axis=1))))
             if i < self.max_iterations - 1:
-                H_total = self._generate_h(X_total)
-                H = H_total[:num_labeled]
-                if X_unlabeled is not None:
-                    noise = np.random.normal(0.0, self.noise_scale * feature_std, size=X_unlabeled.shape)
-                    unlabeled_H_augment = self._transform_iter(X_unlabeled + noise, i + 1)
-                    unlabeled_prob_augment = self._output2prob(output_unlabeled + self._predict_score(new_estimators_, unlabeled_H_augment))
-                    unlabeled_y = prob_total[num_labeled:].argmax(axis=1)
-                    unlabeled_y = self.labelEncoder_.transform(unlabeled_y.reshape((-1, 1)))
-                    output_unlabeled = np.copy(output_total[num_labeled:])
+                H = self._generate_h(X)
         return self
 
 
@@ -501,7 +431,7 @@ class BFRegressor(RegressorMixin, BF):
                 Controls the number of boosting iterations.
         active_function: {str, ('relu', 'tanh', 'sigmoid' or 'linear')}, default='relu'
                         Controls the active function of enhancement nodes.
-        n_nodes_H: int, default=10
+        n_nodes_H: int, default=100
                     Controls the number of enhancement nodes.
         reg_alpha: float, default=0.001
                     Regularization strength; must be a positive float. Regularization improves the conditioning of the problem and reduces the variance of the estimates. Larger values specify stronger regularization.
@@ -520,7 +450,8 @@ class BFRegressor(RegressorMixin, BF):
         random_state: int, default=0
                         Controls the randomness of the estimator.
     """
-    def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=10, reg_alpha=0.001, verbose=False, boosting_model='ridge',
+
+    def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=100, reg_alpha=0.001, verbose=False, boosting_model='ridge',
                  batch_size=256, learning_rate=0.05, noise_scale=1.0, initLearner=None, random_state=0):
         BF.__init__(self, active_function, n_nodes_H)
         self.reg_alpha = reg_alpha
@@ -547,15 +478,10 @@ class BFRegressor(RegressorMixin, BF):
         return output
 
     @staticmethod
-    def _weight_and_response(y, output, is_source=False):
+    def _weight_and_response(y, output):
         z = y - output
         sample_weight = np.ones(z.shape)
-        if is_source:
-            z_abs = np.abs(z)
-            z_abs = np.tanh(z_abs)
-            sample_weight = 1.0 - z_abs
         z = np.clip(z, a_min=-MAX_RESPONSE, a_max=MAX_RESPONSE)
-        sample_weight = np.maximum(sample_weight, 2. * MACHINE_EPSILON)
         return sample_weight, z
 
     def _get_init_output(self, X):
@@ -593,7 +519,7 @@ class BFRegressor(RegressorMixin, BF):
         y_pred = y_pred.reshape(len(X))
         return y_pred
 
-    def fit(self, X=None, y=None, X_unlabeled=None, X_source=None, y_source=None, eval_data=None):
+    def fit(self, X=None, y=None, eval_data=None):
         """
             Build a TrBF model.
 
@@ -604,15 +530,6 @@ class BFRegressor(RegressorMixin, BF):
 
             y : ndarray of shape (n_samples,)
                 Target values.
-
-            X_unlabeled : {ndarray, sparse matrix} of shape (n_samples, n_features) or dict
-                Unlabeled training data.
-
-            X_source : {ndarray, sparse matrix} of shape (n_samples, n_features) or dict
-                Training data from the source domain.
-
-            y_source : ndarray of shape (n_samples,)
-                Target values from the source domain.
 
             eval_data : tuple (X_test, y_test)
                 tuple to use for watching the boosting process.
@@ -625,38 +542,11 @@ class BFRegressor(RegressorMixin, BF):
         np.random.seed(self.random_state)
         y = column_or_1d(y, warn=True)
         X, y = check_X_y(X, y, dtype=[np.float64, np.float32], multi_output=True, y_numeric=True)
-        if X_source is not None and y_source is not None:
-            y_source = column_or_1d(y_source, warn=True)
-            X_source, y_source = check_X_y(X_source, y_source, dtype=[np.float64, np.float32], multi_output=True, y_numeric=True)
-            X = np.r_[X_source, X]
-            y = np.r_[y_source, y]
-            num_source = len(X_source)
-        else:
-            num_source = 0
-        if X_unlabeled is not None:
-            X_unlabeled = check_array(X_unlabeled)
-            X_total = np.r_[X, X_unlabeled]
-        else:
-            X_total = X
-        feature_std = np.std(X_total, axis=0)
-        num_labeled = len(y)
         model = Ridge(alpha=self.reg_alpha)
-        output_total = self._get_init_output(X_total)
+        output = self._get_init_output(X)
         if self.verbose:
-            print('Init MSE Loss: '.format(mean_squared_error(y, output_total[:num_labeled])))
-        H_total = self._generate_h(X_total)
-        H = H_total[:num_labeled]
-        if X_unlabeled is not None:
-            output_unlabeled = np.copy(output_total[num_labeled:])
-            noise = np.random.normal(0.0, self.noise_scale * feature_std, size=X_unlabeled.shape)
-            unlabeled_H_augment = self._transform_iter(X_unlabeled + noise, 0)
-            unlabeled_output_augment_strong = self._get_init_output(X_unlabeled + noise)
-            # noise = np.random.normal(0.0,  0.5*self.noise_scale * feature_std, size=X_unlabeled.shape)
-            # unlabeled_output_augment_weak = self._get_init_output(self.X_unlabeled + noise)
-        else:
-            output_unlabeled = None
-            unlabeled_output_augment_strong = None
-            unlabeled_H_augment = None
+            print('Init MSE Loss: '.format(mean_squared_error(y, output[:num_labeled])))
+        H = self._generate_h(X)
         if eval_data is not None:
             eval_X, eval_y = eval_data
             eval_output = self._get_init_output(eval_X)
@@ -667,47 +557,21 @@ class BFRegressor(RegressorMixin, BF):
         self.estimators_ = []
         for i in range(self.max_iterations):
             new_estimators_ = deepcopy(model)
-            w, z = self._weight_and_response(y[num_source:], output_total[num_source:num_labeled])
+            w, z = self._weight_and_response(y, output)
             batch_index = random.choice(len(w), self.batch_size, replace=True, p=w / w.sum())
-            X_batch, z_batch = H[num_source:][batch_index], z[batch_index]
-            if i % 2 == 0 or X_unlabeled is None:
-                if num_source > 0:
-                    w, z = self._weight_and_response(y[:num_source], output_total[:num_source], is_source=True)
-                    batch_index = random.choice(len(w), self.batch_size, replace=True, p=w / w.sum())
-                    X_batch_source, z_batch_source = H[:num_source][batch_index], z[batch_index]
-                    X_batch, z_batch = np.r_[X_batch_source, X_batch], np.r_[z_batch_source, z_batch]
-
-                new_estimators_.fit(X_batch, z_batch)
-            else:
-                unlabeled_w, unlabeled_z = self._weight_and_response(output_unlabeled, unlabeled_output_augment_strong)
-                unlabeled_batch_index = random.choice(len(unlabeled_w), self.batch_size, replace=True, p=unlabeled_w / unlabeled_w.sum())
-                unlabeled_X_batch1 = unlabeled_H_augment[unlabeled_batch_index]
-                unlabeled_z_batch1 = unlabeled_z[unlabeled_batch_index]
-                X_batch = np.r_[X_batch, unlabeled_X_batch1]
-                z_batch = np.r_[z_batch, unlabeled_z_batch1]
-
-                new_estimators_.fit(X_batch, z_batch)
-
+            X_batch, z_batch = H[batch_index], z[batch_index]
+            new_estimators_.fit(X_batch, z_batch)
             self.estimators_.append(new_estimators_)
-            new_scores = self._predict_score(new_estimators_, H_total)
-            output_total += new_scores
+            new_scores = self._predict_score(new_estimators_, H)
+            output += new_scores
             if self.verbose:
-                print('Iteration: {} MSE Loss: {}'.format(i + 1, mean_squared_error(y, output_total[:num_labeled])))
+                print('Iteration: {} MSE Loss: {}'.format(i + 1, mean_squared_error(y, output)))
             if eval_data is not None:
                 eval_output += self._predict_score(new_estimators_, self._transform_iter(eval_X, i))
                 if self.verbose:
                     print('Iteration: {} Test MSE Loss: {}'.format(i + 1, mean_squared_error(eval_y, eval_output)))
             if i < self.max_iterations - 1:
-                H_total = self._generate_h(X_total)
-                H = H_total[:num_labeled]
-                if X_unlabeled is not None:
-                    noise = np.random.normal(0.0, self.noise_scale * feature_std, size=X_unlabeled.shape)
-                    unlabeled_H_augment = self._transform_iter(X_unlabeled + noise, i + 1)
-                    unlabeled_output_augment_strong = output_unlabeled + self._predict_score(new_estimators_, unlabeled_H_augment)
-                    # noise = np.random.normal(0.0,  0.5*self.noise_scale * feature_std, size=X_unlabeled.shape)
-                    # unlabeled_output_augment_weak = output_unlabeled + self._predict_score(new_estimators_,
-                    #                                                                        self._transform_iter(self.X_unlabeled + noise, i + 1))
-                    output_unlabeled = np.copy(output_total[num_labeled:])
+                H = self._generate_h(X)
         return self
 
 
