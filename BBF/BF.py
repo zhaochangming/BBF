@@ -100,55 +100,6 @@ class node_generator:
         return self.nonlinear_(self.scaler_[i].transform(X.dot(self.W_[i]) + self.b_[i]))
 
 
-def SDA_for_classification(X_target, y_target, initLearner, num_enhanced=1000):
-    n_class = len(np.unique(y_target))
-    y_enhanced = np.zeros((n_class * num_enhanced, n_class))
-    label_enhanced = np.zeros(n_class * num_enhanced)
-    i = 0
-    for c in range(n_class):
-        lambda_list = np.random.beta(0.75, 0.75, num_enhanced)
-        x = np.arange(n_class)
-        x = np.delete(x, c)
-        for lambda_ in lambda_list:
-            max_lambda = max(lambda_, 1 - lambda_)
-            min_lambda = 1 - max_lambda
-            y_enhanced[i, c] = max_lambda
-            y_enhanced[i, np.random.choice(x, 1)] = min_lambda
-            label_enhanced[i] = c
-            i += 1
-
-    reg = Ridge(alpha=0.1, fit_intercept=False)
-    reg.fit(initLearner.W.T, (y_enhanced - initLearner.bias.reshape((1, -1))).T)
-    X_enhanced = reg.coef_
-    X_enhanced = (X_enhanced - X_enhanced.mean(axis=0)) / X_enhanced.std(axis=0)
-    X_enhanced = X_enhanced * X_target.std(axis=0) + X_target.mean(axis=0)
-    return X_enhanced, label_enhanced
-
-
-def SDA_for_regression(X_target, y_target, initLearner, num_enhanced=1000):
-    n_class = 2
-    y_enhanced = np.zeros((n_class * num_enhanced, n_class))
-    i = 0
-    for c in range(n_class):
-        lambda_list = np.random.beta(0.75, 0.75, num_enhanced)
-        x = np.arange(n_class)
-        x = np.delete(x, c)
-        for lambda_ in lambda_list:
-            max_lambda = max(lambda_, 1 - lambda_)
-            min_lambda = 1 - max_lambda
-            y_enhanced[i, c] = max_lambda
-            y_enhanced[i, np.random.choice(x, 1)] = min_lambda
-            i += 1
-    # y_enhanced = 2.0 * y_enhanced - 1.0
-    reg = Ridge(alpha=0.1, fit_intercept=False)
-    reg.fit(initLearner.W.reshape(-1, 1).T, (y_enhanced[:, 1] - initLearner.bias).reshape(-1, 1).T)
-    X_enhanced = reg.coef_
-    X_enhanced = (X_enhanced - X_enhanced.mean(axis=0)) / X_enhanced.std(axis=0)
-    X_enhanced = X_enhanced * X_target.std(axis=0) + X_target.mean(axis=0)
-    # y_enhanced = initLearner.decision_function(X_enhanced).ravel()
-    return X_enhanced, y_enhanced[:, 1]
-
-
 class BF(BaseEstimator, node_generator):
     def __init__(self, active_function='relu', n_nodes_H=10):
         node_generator.__init__(self, active_function, n_nodes_H)
