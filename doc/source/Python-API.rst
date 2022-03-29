@@ -18,3 +18,19 @@ BBF.BFRegressor
    :members:
    :undoc-members:
    :show-inheritance:
+
+BBF.BBFClassifier
+--------------------------------
+
+.. autoclass:: BBF.BBFClassifier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+BBF.BFRegressor
+--------------------------------
+
+.. autoclass:: BBF.BBFRegressor
+   :members:
+   :undoc-members:
+   :show-inheritance:

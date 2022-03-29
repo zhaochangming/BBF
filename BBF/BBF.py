@@ -60,9 +60,14 @@ class BBFClassifier(BaggingClassifier):
         verbose : int, default=0
         Controls the verbosity when fitting and predicting.
     """
-    def __init__(self, , **kwargs):
+
+    def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=100, reg_alpha=0.001, boosting_model='ridge',
+                 batch_size=256, learning_rate=0.05, initLearner=None, **kwargs):
         BaggingClassifier.__init__(self,
-                                   base_estimator=BFClassifier(), **kwargs)
+                                   base_estimator=BFClassifier(max_iterations=max_iterations, active_function=active_function,
+                                                               n_nodes_H=n_nodes_H, reg_alpha=reg_alpha, boosting_model=boosting_model,
+                                                               batch_size=batch_size, learning_rate=learning_rate, initLearner=initLearner),
+                                   **kwargs)
 
 
 class BBFRegressor(BaggingRegressor):
@@ -122,6 +127,11 @@ class BBFRegressor(BaggingRegressor):
         verbose : int, default=0
             Controls the verbosity when fitting and predicting.
     """
-    def __init__(self, , **kwargs):
+
+    def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=100, reg_alpha=0.001, boosting_model='ridge',
+                 batch_size=256, learning_rate=0.05, initLearner=None, **kwargs):
         BaggingRegressor.__init__(self,
-                                  base_estimator=BFRegressor(), **kwargs)
+                                  base_estimator=BFRegressor(max_iterations=max_iterations, active_function=active_function,
+                                                             n_nodes_H=n_nodes_H, reg_alpha=reg_alpha, boosting_model=boosting_model,
+                                                             batch_size=batch_size, learning_rate=learning_rate, initLearner=initLearner),
+                                  **kwargs)
