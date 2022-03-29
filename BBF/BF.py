@@ -545,7 +545,7 @@ class BFRegressor(RegressorMixin, BF):
         model = Ridge(alpha=self.reg_alpha)
         output = self._get_init_output(X)
         if self.verbose:
-            print('Init MSE Loss: '.format(mean_squared_error(y, output[:num_labeled])))
+            print('Init MSE Loss: '.format(mean_squared_error(y, output)))
         H = self._generate_h(X)
         if eval_data is not None:
             eval_X, eval_y = eval_data
