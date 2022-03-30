@@ -13,7 +13,32 @@ class BBFClassifier(BaggingClassifier):
 
         Parameters
         ----------
+        max_iterations: int, default=10
+                Controls the number of boosting iterations.
 
+        active_function: {str, ('relu', 'tanh', 'sigmoid' or 'linear')}, default='relu'
+                        Controls the active function of enhancement nodes.
+
+        n_nodes_H: int, default=100
+                    Controls the number of enhancement nodes.
+
+        reg_alpha: float, default=0.001
+                    Regularization strength; must be a positive float. Regularization improves the conditioning of the problem and reduces the variance of the estimates. Larger values specify stronger regularization.
+
+        verbose: bool, default=False
+                Controls wether to show the boosting process.
+
+        boosting_model: str, default='ridge'
+                Controls the base learner used in boosting.
+
+        batch_size: int, default=256
+                Controls the batch size.
+
+        learning_rate: float, default=0.05
+                Controls the learning rate.
+
+        initLearner: obj, default=None
+                Controls the initial model.
 
         n_estimators : int, default=10
             The number of base estimators in the ensemble.
@@ -101,7 +126,32 @@ class BBFRegressor(BaggingRegressor):
 
         Parameters
         ----------
+        max_iterations: int, default=10
+                Controls the number of boosting iterations.
 
+        active_function: {str, ('relu', 'tanh', 'sigmoid' or 'linear')}, default='relu'
+                        Controls the active function of enhancement nodes.
+
+        n_nodes_H: int, default=100
+                    Controls the number of enhancement nodes.
+
+        reg_alpha: float, default=0.001
+                    Regularization strength; must be a positive float. Regularization improves the conditioning of the problem and reduces the variance of the estimates. Larger values specify stronger regularization.
+
+        verbose: bool, default=False
+                Controls wether to show the boosting process.
+
+        boosting_model: str, default='ridge'
+                Controls the base learner used in boosting.
+
+        batch_size: int, default=256
+                Controls the batch size.
+
+        learning_rate: float, default=0.05
+                Controls the learning rate.
+
+        initLearner: obj, default=None
+                Controls the initial model.
 
         n_estimators : int, default=10
             The number of base estimators in the ensemble.

@@ -1,7 +1,7 @@
 Python-package Introduction
 ===========================
 
-This document gives a basic walk-through of TrBF Python-package.
+This document gives a basic walk-through of BBF Python-package.
 
 **List of other helpful links**
 
@@ -14,23 +14,23 @@ This document gives a basic walk-through of TrBF Python-package.
 Install
 -------
 
-The preferred way to install TrBF is via pip from `Pypi <https://pypi.org/project/TrBF>`__:
+The preferred way to install BBF is via pip from `Pypi <https://pypi.org/project/BBF>`__:
 
 ::
 
-    pip install TrBF
+    pip install BBF
 
 
-To verify your installation, try to ``import TrBF`` in Python:
+To verify your installation, try to ``import BBF`` in Python:
 
 ::
 
-    import TrBF
+    import BBF
 
 Data Interface
 --------------
 
-The TrBF Python module can load data from:
+The BBF Python module can load data from:
 
 -  NumPy 2D array(s)
     .. code:: python
@@ -44,12 +44,12 @@ The TrBF Python module can load data from:
 Setting Parameters
 ------------------
 
-TrBF can use a dictionary to set parameters.
+BBF can use a dictionary to set parameters.
 For instance:
 
    .. code:: python
 
-       param = {'max_iterations': 200, 'active_function': 'relu', 'n_nodes_H':100, 'reg_alpha': 0.001, 'random_state':0}
+       param = {'max_iterations': 200, 'active_function': 'relu', 'n_nodes_H': 100, 'reg_alpha': 0.001, 'random_state': 0}
 
 
 Training
@@ -60,7 +60,7 @@ Training a model requires a parameter dictionary and data set:
 .. code:: python
 
 
-    estimator = TrBF.SemiTrBFClassifier(**param).fit(data, label)
+    estimator = BBF.BFClassifier(**param).fit(data, label)
 
 After training, the model can be saved:
 

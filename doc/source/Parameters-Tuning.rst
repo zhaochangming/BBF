@@ -18,7 +18,7 @@ Deal with Over-fitting
 
 -  Use bigger training data
 
--  Try ``learning_rate``, ``reg_alpha`` , ``learning_rate`` and ``noise_scale`` for regularization
+-  Try ``learning_rate``, ``reg_alpha`` and ``noise_scale`` for regularization
 
 
 
