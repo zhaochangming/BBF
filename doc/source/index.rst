@@ -5,10 +5,10 @@ Welcome to BBF's documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   Python Quick Start <Python-Intro>
+    Python Quick Start <Python-Intro>
     Parameters Tuning <Parameters-Tuning>
     Python API <Python-API>
-
+    Python Examples <Demo>
 Indices and tables
 ==================
 
