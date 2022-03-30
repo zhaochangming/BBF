@@ -1,8 +1,5 @@
 from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from .BF import BFClassifier, BFRegressor
-import numpy as np
-from sklearn.preprocessing import normalize
-from copy import deepcopy
 from sklearn.ensemble._base import _set_random_states
 from sklearn.base import clone
 
