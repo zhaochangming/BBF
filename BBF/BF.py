@@ -25,6 +25,9 @@ class NNLinear:
     def decision_function(self, X):
         return X @ self.W + self.bias.reshape((1, -1))
 
+    def predict(self, X):
+        return X @ self.W + self.bias.reshape((1, -1))
+
 
 class myEncoder:
     def __init__(self):
@@ -222,18 +225,13 @@ class BFClassifier(ClassifierMixin, BF):
             balance_index.extend(self._down_sample(index_negative, weight[index_negative], bs))
         return balance_index
 
-    def _predict(self, X, iter=None):
+    def _decision_function(self, X, iter=None):
         if iter is None:
             iter = self.max_iterations
-        output = np.zeros((len(X), self.n_classes_))
+        output = self._get_init_output(X)
         for i in range(iter):
             output += self._predict_score(self.estimators_[i], self._transform_iter(X, i))
         return output
-
-    def _decision_function(self, X, iter=None):
-        output = self._get_init_output(X)
-        output_boosting = self._predict(X, iter)
-        return output + output_boosting
 
     def predict(self, X, iter=None):
         """
@@ -420,14 +418,6 @@ class BFRegressor(RegressorMixin, BF):
         new_scores = np.clip(new_scores, a_min=-MAX_RESPONSE, a_max=MAX_RESPONSE)
         return new_scores * self.learning_rate
 
-    def _predict(self, X, iter=None):
-        if iter is None:
-            iter = self.max_iterations
-        output = np.zeros(len(X))
-        for i in range(iter):
-            output += self._predict_score(self.estimators_[i], self._transform_iter(X, i))
-        return output
-
     @staticmethod
     def _weight_and_response(y, output):
         z = y - output
@@ -437,16 +427,19 @@ class BFRegressor(RegressorMixin, BF):
 
     def _get_init_output(self, X):
         if self.initLearner is not None:
-            initOutput = self.initLearner.decision_function(X)
+            initOutput = self.initLearner.predict(X)
             initOutput = initOutput.reshape(len(X))
         else:
             initOutput = np.zeros(len(X))
         return initOutput
 
     def _decision_function(self, X, iter=None):
+        if iter is None:
+            iter = self.max_iterations
         output = self._get_init_output(X)
-        output_boosting = self._predict(X, iter)
-        return output + output_boosting
+        for i in range(iter):
+            output += self._predict_score(self.estimators_[i], self._transform_iter(X, i))
+        return output
 
     def predict(self, X, iter=None):
         """

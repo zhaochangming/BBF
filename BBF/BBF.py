@@ -1,5 +1,10 @@
 from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from .BF import BFClassifier, BFRegressor
+import numpy as np
+from sklearn.preprocessing import normalize
+from copy import deepcopy
+from sklearn.ensemble._base import _set_random_states
+from sklearn.base import clone
 
 
 class BBFClassifier(BaggingClassifier):
@@ -66,8 +71,28 @@ class BBFClassifier(BaggingClassifier):
         BaggingClassifier.__init__(self,
                                    base_estimator=BFClassifier(max_iterations=max_iterations, active_function=active_function,
                                                                n_nodes_H=n_nodes_H, reg_alpha=reg_alpha, boosting_model=boosting_model,
-                                                               batch_size=batch_size, learning_rate=learning_rate, initLearner=initLearner),
+                                                               batch_size=batch_size, learning_rate=learning_rate,
+                                                               initLearner=None),
                                    **kwargs)
+        self.initLearner = initLearner
+
+    def _make_estimator(self, append=True, random_state=None):
+        """Make and configure a copy of the `base_estimator_` attribute.
+
+        Warning: This method should be used to properly instantiate new
+        sub-estimators.
+        """
+        estimator = clone(self.base_estimator_)
+        estimator.set_params(**{p: getattr(self, p)
+                                for p in self.estimator_params})
+
+        if random_state is not None:
+            _set_random_states(estimator, random_state)
+        estimator.set_params(**{'initLearner': self.initLearner})
+        if append:
+            self.estimators_.append(estimator)
+
+        return estimator
 
 
 class BBFRegressor(BaggingRegressor):
@@ -133,5 +158,24 @@ class BBFRegressor(BaggingRegressor):
         BaggingRegressor.__init__(self,
                                   base_estimator=BFRegressor(max_iterations=max_iterations, active_function=active_function,
                                                              n_nodes_H=n_nodes_H, reg_alpha=reg_alpha, boosting_model=boosting_model,
-                                                             batch_size=batch_size, learning_rate=learning_rate, initLearner=initLearner),
+                                                             batch_size=batch_size, learning_rate=learning_rate, initLearner=None),
                                   **kwargs)
+        self.initLearner = initLearner
+
+    def _make_estimator(self, append=True, random_state=None):
+        """Make and configure a copy of the `base_estimator_` attribute.
+
+        Warning: This method should be used to properly instantiate new
+        sub-estimators.
+        """
+        estimator = clone(self.base_estimator_)
+        estimator.set_params(**{p: getattr(self, p)
+                                for p in self.estimator_params})
+
+        if random_state is not None:
+            _set_random_states(estimator, random_state)
+        estimator.set_params(**{'initLearner': self.initLearner})
+        if append:
+            self.estimators_.append(estimator)
+
+        return estimator
