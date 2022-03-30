@@ -148,33 +148,39 @@ class BFClassifier(ClassifierMixin, BF):
         ----------
         max_iterations: int, default=10
                 Controls the number of boosting iterations.
+
         active_function: {str, ('relu', 'tanh', 'sigmoid' or 'linear')}, default='relu'
                         Controls the active function of enhancement nodes.
+
         n_nodes_H: int, default=100
                     Controls the number of enhancement nodes.
+
         reg_alpha: float, default=0.001
                     Regularization strength; must be a positive float. Regularization improves the conditioning of the problem and reduces the variance of the estimates. Larger values specify stronger regularization.
+
         verbose: bool, default=False
                 Controls wether to show the boosting process.
+
         boosting_model: str, default='ridge'
                 Controls the base learner used in boosting.
+
         batch_size: int, default=256
                 Controls the batch size.
+
         learning_rate: float, default=0.05
                 Controls the learning rate.
-        noise_scale: float, default=1.0
-                Controls the noise level.
+
         initLearner: obj, default=None
                 Controls the initial model.
+
         random_state: int, default=0
                         Controls the randomness of the estimator.
     """
 
     def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=100, reg_alpha=0.001, verbose=False, boosting_model='ridge',
-                 batch_size=256, learning_rate=0.05, noise_scale=1.0, initLearner=None, random_state=0):
+                 batch_size=256, learning_rate=0.05, initLearner=None, random_state=0):
         BF.__init__(self, active_function, n_nodes_H)
         self.reg_alpha = reg_alpha
-        self.noise_scale = noise_scale
         self.initLearner = initLearner
         self.batch_size = batch_size
         self.max_iterations = max_iterations
@@ -378,33 +384,39 @@ class BFRegressor(RegressorMixin, BF):
         ----------
         max_iterations: int, default=10
                 Controls the number of boosting iterations.
+
         active_function: {str, ('relu', 'tanh', 'sigmoid' or 'linear')}, default='relu'
                         Controls the active function of enhancement nodes.
+
         n_nodes_H: int, default=100
                     Controls the number of enhancement nodes.
+
         reg_alpha: float, default=0.001
                     Regularization strength; must be a positive float. Regularization improves the conditioning of the problem and reduces the variance of the estimates. Larger values specify stronger regularization.
+
         verbose: bool, default=False
                 Controls wether to show the boosting process.
+
         boosting_model: str, default='ridge'
                 Controls the base learner used in boosting.
+
         batch_size: int, default=256
                 Controls the batch size.
+
         learning_rate: float, default=0.05
                 Controls the learning rate.
-        noise_scale: float, default=1.0
-                Controls the noise level.
+
         initLearner: obj, default=None
                 Controls the initial model.
+
         random_state: int, default=0
                         Controls the randomness of the estimator.
     """
 
     def __init__(self, max_iterations=10, active_function='relu', n_nodes_H=100, reg_alpha=0.001, verbose=False, boosting_model='ridge',
-                 batch_size=256, learning_rate=0.05, noise_scale=1.0, initLearner=None, random_state=0):
+                 batch_size=256, learning_rate=0.05, initLearner=None, random_state=0):
         BF.__init__(self, active_function, n_nodes_H)
         self.reg_alpha = reg_alpha
-        self.noise_scale = noise_scale
         self.initLearner = initLearner
         self.batch_size = batch_size
         self.max_iterations = max_iterations
