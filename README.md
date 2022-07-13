@@ -11,7 +11,7 @@
 Our primary documentation is at https://bbf.readthedocs.io and is generated from this repository. If you are new to BBF, follow [the installation instructions](https://bbf.readthedocs.io/en/latest/Python-Intro.html) on that site. The preferred way to install BBF is via pip from [Pypi](https://pypi.org/project/BBF).
 
 Next you may want to read:
-- [**APIs & Parameters**](https://bbf.readthedocs.io/en/latest/BoostForest.html) is an exhaustive list of customization you can make.
+- [**APIs & Parameters**](https://bbf.readthedocs.io/en/latest/Python-API.html) is an exhaustive list of customization you can make.
 - [**Parameters Tuning**](https://bbf.readthedocs.io/en/latest/Parameters-Tuning.html) is an exhaustive list of customization you can make.
 - [**Examples**](https://bbf.readthedocs.io/en/latest/Demo.html) showing command line usage of common tasks.
 
