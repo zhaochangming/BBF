@@ -17,7 +17,7 @@ Next you may want to read:
 
 ## References
 
-[1] C. Zhao, R. Peng and D. Wu, “Bagging and Boosting Fine-tuning (BBF) for Ensemble Learning,” IEEE Trans. on Artificial Intelligence, Early Access, 2023, DOI: 10.1109/TAI.2023.3296685.
+[1] C. Zhao, R. Peng and D. Wu, “Bagging and Boosting Fine-tuning for Ensemble Learning,” IEEE Trans. on Artificial Intelligence, Early Access, 2023, DOI: 10.1109/TAI.2023.3296685.
 
 [2] J. H. Friedman, “Greedy function approximation: A gradient boosting machine,” Annals of Statistics, vol. 29, no. 5, pp. 1189–1232, 2001.
 
